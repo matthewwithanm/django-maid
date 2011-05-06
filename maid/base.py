@@ -1,6 +1,7 @@
 from django.db.models.signals import post_delete, pre_save, post_save
 import weakref
 from collections import defaultdict
+from django.db.models.fields import FieldDoesNotExist
 
 
 class FileFieldRegistry(object):
@@ -60,26 +61,31 @@ class FileFieldRegistry(object):
     @staticmethod
     def _delete(instance, field_name):
         model_type = instance.__class__
-        field = model_type._meta.get_field(field_name)
-        file = getattr(instance, field_name)
-    
+        
         try:
-            perform_deletion = file and file.name != field.default
-        except AttributeError:
-            # Wasn't actually a file.
+            field = model_type._meta.get_field(field_name)
+        except FieldDoesNotExist:
             pass
         else:
-            # If no other object of this type references the file, 
-            # and it's not the default value for future objects, 
-            # delete it from the backend.
-            if perform_deletion and not \
-                model_type._default_manager.filter(**{field.name: file.name}).exclude(pk=instance.pk):
-                    # Don't save the instance because that would trigger the
-                    # pre_save signal again.
-                    file.delete(save=False) 
+            file = getattr(instance, field_name)
+    
+            try:
+                perform_deletion = file and file.name != field.default
+            except AttributeError:
+                # Wasn't actually a file.
+                pass
             else:
-                # Otherwise, just close the file, so it doesn't tie up resources. 
-                file.close()
+                # If no other object of this type references the file, 
+                # and it's not the default value for future objects, 
+                # delete it from the backend.
+                if perform_deletion and not \
+                    model_type._default_manager.filter(**{field.name: file.name}).exclude(pk=instance.pk):
+                        # Don't save the instance because that would trigger the
+                        # pre_save signal again.
+                        file.delete(save=False) 
+                else:
+                    # Otherwise, just close the file, so it doesn't tie up resources. 
+                    file.close()
 
 
 # The registry instance.
