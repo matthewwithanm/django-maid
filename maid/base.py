@@ -17,13 +17,12 @@ class FileFieldRegistry(object):
         current value is deleted, she'll get rid of the old file.
         """
         
-        if not model in self._registered_fields:
+        if model not in self._registered_fields:
             # If this is the first time the model is being registered, connect
             # our signals.
-            dispatch_uid = 'maid-filefieldregistry-%s.%s' % (model.__module__, model.__name__)
-            post_delete.connect(self._model_post_delete, sender=model, dispatch_uid=dispatch_uid)
-            pre_save.connect(self._model_pre_save, sender=model, dispatch_uid=dispatch_uid)
-            post_save.connect(self._model_post_save, sender=model, dispatch_uid=dispatch_uid)
+            post_delete.connect(self._model_post_delete, sender=model)
+            pre_save.connect(self._model_pre_save, sender=model)
+            post_save.connect(self._model_post_save, sender=model)
             
         # Register the new fields.
         self._registered_fields[model] = self._registered_fields.get(model, set()) | set(field_names)
