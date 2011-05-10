@@ -18,7 +18,7 @@ Usage
     from myapp.models import MyModel
     import maid
     
-    maid.register_file_fields(MyModel, 'document', 'thumbnail_image')
+    maid.register_file_fields(MyModel, ['document', 'thumbnail_image'])
 
 
 Maid will now automatically delete files stored in the `document` and
